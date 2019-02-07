@@ -1,0 +1,9 @@
+apiVersion: foogroup.raker22.com/v1
+kind: Foo
+metadata:
+  name: example-foo
+  labels:
+    app: example
+spec:
+  message: goodbye
+  value: 24

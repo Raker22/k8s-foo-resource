@@ -1,0 +1,3 @@
+version: "1"
+domain: raker22.com
+repo: github.com/raker22/k8s-foo-resource
