@@ -88,7 +88,7 @@ func (in *FooReplicaSet) DeepCopyInto(out *FooReplicaSet) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec.DeepCopyInto(&out.Spec)
 	out.Status = in.Status
 	return
 }
@@ -148,6 +148,7 @@ func (in *FooReplicaSetList) DeepCopyObject() runtime.Object {
 func (in *FooReplicaSetSpec) DeepCopyInto(out *FooReplicaSetSpec) {
 	*out = *in
 	out.Template = in.Template
+	in.Selector.DeepCopyInto(&out.Selector)
 	return
 }
 

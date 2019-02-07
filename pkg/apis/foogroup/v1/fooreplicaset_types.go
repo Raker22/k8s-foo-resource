@@ -26,8 +26,9 @@ import (
 type FooReplicaSetSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Replicas int32   `json:"replicas"`
-	Template FooSpec `json:"template"`
+	Replicas int                  `json:"replicas"`
+	Template FooSpec              `json:"template"`
+	Selector metav1.LabelSelector `json:"selector"`
 }
 
 // FooReplicaSetStatus defines the observed state of FooReplicaSet

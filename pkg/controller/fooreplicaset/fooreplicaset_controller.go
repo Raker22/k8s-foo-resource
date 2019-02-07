@@ -17,15 +17,13 @@ package fooreplicaset
 
 import (
 	"context"
-	"reflect"
+	"fmt"
 
 	foogroupv1 "github.com/raker22/k8s-foo-resource/pkg/apis/foogroup/v1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -94,8 +92,8 @@ type ReconcileFooReplicaSet struct {
 // TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
 // a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=foogroup.raker22.com,resources=foos,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=foogroup.raker22.com,resources=foos/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=foogroup.raker22.com,resources=fooreplicasets,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=foogroup.raker22.com,resources=fooreplicasets/status,verbs=get;update;patch
 func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile.Result, error) {
@@ -112,37 +110,65 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 		return reconcile.Result{}, err
 	}
 
+	if reflect.DeepEqual(instance.Spec.Selector, metav1.LabelSelector{}) {
+		log.Info("Foo replica set is selecting all foos", "FooReplicaSet", instance.Name)
+		return reconcile.Result{}, nil
+	}
+
+	selector, err := metav1.LabelSelectorAsSelector(&instance.Spec.Selector)
+
+	fooList := &foogroupv1.FooList{}
+	if err := r.List(context.TODO(), &client.ListOptions{
+		LabelSelector: selector,
+	}, fooList); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	// TODO(user): Change this to be the object type created by your controller
-	// Define the desired Deployment object
-	foo := &foogroupv1.Foo{
-
+	// Define the desired Foo object
+	fooTemplate := &foogroupv1.Foo{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:    instance.Namespace,
+			GenerateName: fmt.Sprintf("%s-", instance.Name),
+		},
+		Spec: *instance.Spec.Template.DeepCopy(),
 	}
 
-	if err := controllerutil.SetControllerReference(instance, foo, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
+	diffFoos := instance.Spec.Replicas - len(fooList.Items)
 
-	// TODO(user): Change this for the object type created by your controller
-	// Check if the Deployment already exists
-	found := &foogroupv1.Foo{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: foo.Name, Namespace: foo.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		log.Info("Creating Deployment", "namespace", foo.Namespace, "name", foo.Name)
-		err = r.Create(context.TODO(), foo)
-		return reconcile.Result{}, err
-	} else if err != nil {
-		return reconcile.Result{}, err
-	}
+	if diffFoos > 0 {
+		for i := 0; i < diffFoos; i++ {
+			foo := fooTemplate.DeepCopy()
 
-	// TODO(user): Change this for the object type created by your controller
-	// Update the found object and write the result back if there are any changes
-	if !reflect.DeepEqual(foo.Spec, found.Spec) {
-		found.Spec = foo.Spec
-		log.Info("Updating Deployment", "namespace", foo.Namespace, "name", foo.Name)
-		err = r.Update(context.TODO(), found)
-		if err != nil {
-			return reconcile.Result{}, err
+			if err := controllerutil.SetControllerReference(instance, foo, r.scheme); err != nil {
+				return reconcile.Result{}, err
+			}
+
+			// TODO(user): Change this for the object type created by your controller
+			log.Info("Creating Foo", "namespace", foo.Namespace, "name", foo.Name)
+			if err := r.Create(context.TODO(), foo); err != nil {
+				log.Info("Failed to create Foo", "namespace", foo.Namespace, "FooReplicaSet", instance.Name)
+				return reconcile.Result{}, err
+			}
 		}
 	}
+
+	log.Info("Foos matching foo replica set", "FooReplicaSet", instance.Name)
+	for _, foo := range fooList.Items {
+		log.Info("", "Foo", foo.Name)
+	}
+
+	//
+	//// TODO(user): Change this for the object type created by your controller
+	//// Update the found object and write the result back if there are any changes
+	//if !reflect.DeepEqual(foo.Spec, found.Spec) {
+	//	found.Spec = foo.Spec
+	//	log.Info("Updating Foo", "namespace", foo.Namespace, "name", foo.Name)
+	//	//err = r.Update(context.TODO(), found)
+	//	if err != nil {
+	//		return reconcile.Result{}, err
+	//	}
+	//}
+
 	return reconcile.Result{}, nil
 }
