@@ -4,9 +4,9 @@ metadata:
   creationTimestamp: null
   labels:
     controller-tools.k8s.io: "1.0"
-  name: foos.foogroup.raker22.com
+  name: foos.foo.raker22.com
 spec:
-  group: foogroup.raker22.com
+  group: foo.raker22.com
   names:
     kind: Foo
     plural: foos

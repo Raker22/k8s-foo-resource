@@ -1,0 +1,18 @@
+apiVersion: foo.raker22.com/v1
+kind: FooReplicaSet
+metadata:
+  name: fooreplicaset-sample
+  labels:
+    app: sample
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: sample
+    spec:
+      message: hello world
+      value: 42
+  selector:
+    matchLabels:
+      app: sample

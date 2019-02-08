@@ -13,5 +13,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package foogroup contains foogroup API versions
-package foogroup
+// Package foo contains foo API versions
+package foo

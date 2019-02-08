@@ -19,7 +19,7 @@ import (
 	"context"
 	"reflect"
 
-	foogroupv1 "github.com/raker22/k8s-foo-resource/pkg/apis/foogroup/v1"
+	foov1 "github.com/raker22/k8s-foo-resource/pkg/apis/foo/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -59,7 +59,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to Foo
-	err = c.Watch(&source.Kind{Type: &foogroupv1.Foo{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &foov1.Foo{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Uncomment watch a Deployment created by Foo - change this for objects you create
 	//err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 	//	IsController: true,
-	//	OwnerType:    &foogroupv1.Foo{},
+	//	OwnerType:    &foov1.Foo{},
 	//})
 	//if err != nil {
 	//	return err
@@ -90,11 +90,11 @@ type ReconcileFoo struct {
 // TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
 // a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Foos
-// +kubebuilder:rbac:groups=foogroup.raker22.com,resources=foos,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=foogroup.raker22.com,resources=foos/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=foo.raker22.com,resources=foos,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=foo.raker22.com,resources=foos/status,verbs=get;update;patch
 func (r *ReconcileFoo) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// Fetch the Foo instance
-	instance := &foogroupv1.Foo{}
+	instance := &foov1.Foo{}
 	err := r.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -110,7 +110,7 @@ func (r *ReconcileFoo) Reconcile(request reconcile.Request) (reconcile.Result, e
 	// Define the desired Deployment object
 	foo := instance.DeepCopy()
 
-	foo.Status = foogroupv1.FooStatus{
+	foo.Status = foov1.FooStatus{
 		Message: instance.Spec.Message,
 		Value:   instance.Spec.Value,
 	}
@@ -121,7 +121,7 @@ func (r *ReconcileFoo) Reconcile(request reconcile.Request) (reconcile.Result, e
 
 	// TODO(user): Change this for the object type created by your controller
 	// Check if the Deployment already exists
-	found := &foogroupv1.Foo{}
+	found := &foov1.Foo{}
 	err = r.Get(context.TODO(), types.NamespacedName{Name: foo.Name, Namespace: foo.Namespace}, found)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -131,7 +131,7 @@ func (r *ReconcileFoo) Reconcile(request reconcile.Request) (reconcile.Result, e
 	// Update the found object and write the result back if there are any changes
 	if !reflect.DeepEqual(foo.Status, found.Status) {
 		found.Status = foo.Status
-		log.Info("Updating Foo", "namespace", foo.Namespace, "name", foo.Name)
+		log.Info("Updating Foo", "foo", foo.Name)
 		err = r.Update(context.TODO(), found)
 		if err != nil {
 			return reconcile.Result{}, err

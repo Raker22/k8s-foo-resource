@@ -1,9 +1,0 @@
-apiVersion: foogroup.raker22.com/v1
-kind: FooReplicaSet
-metadata:
-  labels:
-    controller-tools.k8s.io: "1.0"
-  name: fooreplicaset-sample
-spec:
-  # Add fields here
-  foo: bar

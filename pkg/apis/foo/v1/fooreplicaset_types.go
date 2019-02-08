@@ -27,7 +27,7 @@ type FooReplicaSetSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Replicas int                  `json:"replicas"`
-	Template FooSpec              `json:"template"`
+	Template Foo                  `json:"template"`
 	Selector metav1.LabelSelector `json:"selector"`
 }
 

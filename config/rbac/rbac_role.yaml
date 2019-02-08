@@ -5,27 +5,7 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - apps
-  resources:
-  - deployments/status
-  verbs:
-  - get
-  - update
-  - patch
-- apiGroups:
-  - foogroup.raker22.com
+  - foo.raker22.com
   resources:
   - foos
   verbs:
@@ -37,7 +17,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - foogroup.raker22.com
+  - foo.raker22.com
   resources:
   - foos/status
   verbs:
@@ -45,9 +25,9 @@ rules:
   - update
   - patch
 - apiGroups:
-  - apps
+  - foo.raker22.com
   resources:
-  - deployments
+  - foos
   verbs:
   - get
   - list
@@ -57,15 +37,15 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - apps
+  - foo.raker22.com
   resources:
-  - deployments/status
+  - foos/status
   verbs:
   - get
   - update
   - patch
 - apiGroups:
-  - foogroup.raker22.com
+  - foo.raker22.com
   resources:
   - fooreplicasets
   verbs:
@@ -77,7 +57,7 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - foogroup.raker22.com
+  - foo.raker22.com
   resources:
   - fooreplicasets/status
   verbs:
