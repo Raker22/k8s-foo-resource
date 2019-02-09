@@ -18,14 +18,16 @@ package fooreplicaset
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 
 	foov1 "github.com/raker22/k8s-foo-resource/pkg/apis/foo/v1"
+	foohandler "github.com/raker22/k8s-foo-resource/pkg/handler"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"reflect"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -70,28 +72,24 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// TODO(user): Modify this to be the types you create
 	// Uncomment watch a Deployment created by FooReplicaSet - change this for objects you create
-	err = c.Watch(&source.Kind{Type: &foov1.Foo{}}, &EnqueueRequestForOrphans{
-		EnqueueRequestForOwner: handler.EnqueueRequestForOwner{
-			OwnerType:    &foov1.FooReplicaSet{},
-			IsController: true,
-		},
-		Adopt: func(e *EnqueueRequestForOrphans, object metav1.Object) ([]metav1.OwnerReference, error) {
-			log.Info("Attempting to adopt foo", "foo", object.GetName())
+	err = c.Watch(&source.Kind{Type: &foov1.Foo{}}, &foohandler.EnqueueRequestForController{
+		OwnerType: &foov1.FooReplicaSet{},
+		GetOwner: func(object metav1.Object) (metav1.Object, error) {
 			namespacedName := types.NamespacedName{
 				Namespace: object.GetNamespace(),
 				Name:      object.GetName(),
 			}
 
-			rec := ReconcileFooReplicaSet(r)
+			c := mgr.GetClient()
 
 			foo := &foov1.Foo{}
-			if err := rec.Get(context.TODO(), namespacedName, foo); err != nil {
-				return []metav1.OwnerReference{}, err
+			if err := c.Get(context.TODO(), namespacedName, foo); err != nil {
+				return nil, err
 			}
 
 			fooReplicaSetList := &foov1.FooReplicaSetList{}
-			if err := rec.List(context.TODO(), &client.ListOptions{}, fooReplicaSetList); err != nil {
-				return []metav1.OwnerReference{}, err
+			if err := c.List(context.TODO(), &client.ListOptions{}, fooReplicaSetList); err != nil {
+				return nil, err
 			}
 
 			fooLabels := labels.Set(foo.Labels)
@@ -104,30 +102,32 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 				selector, err := metav1.LabelSelectorAsSelector(&fooReplicaSet.Spec.Selector)
 				if err != nil {
-					return []metav1.OwnerReference{}, nil
+					log.Info("Error parsing foo replica set selector", "fooReplicaSet", fooReplicaSet.Name)
+					continue
 				}
 
 				if selector.Matches(fooLabels) {
-					log.Info("Adopting foo",
-						"namespace", foo.Namespace,
-						"fooReplicaSet", fooReplicaSet.Name,
-						"foo", foo.Name,
-					)
-					if err := controllerutil.SetControllerReference(&fooReplicaSet, foo, r.scheme); err != nil {
-						log.Info("Failed to adopt foo",
-							"namespace", foo.Namespace,
-							"fooReplicaSet", fooReplicaSet.Name,
-							"foo", foo.Name,
-						)
-					} else {
-						if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
-							return []metav1.OwnerReference{*ownerRef}, nil
-						}
-					}
+					return &fooReplicaSet, nil
+					//log.Info("Adopting foo",
+					//	"namespace", foo.Namespace,
+					//	"fooReplicaSet", fooReplicaSet.Name,
+					//	"foo", foo.Name,
+					//)
+					//if err := controllerutil.SetControllerReference(&fooReplicaSet, foo, mgr.GetScheme()); err != nil {
+					//	log.Info("Failed to adopt foo",
+					//		"namespace", foo.Namespace,
+					//		"fooReplicaSet", fooReplicaSet.Name,
+					//		"foo", foo.Name,
+					//	)
+					//} else {
+					//	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
+					//		return []metav1.OwnerReference{*ownerRef}, nil
+					//	}
+					//}
 				}
 			}
 
-			return []metav1.OwnerReference{}, fmt.Errorf("no possible owners for object")
+			return nil, fmt.Errorf("no possible owner for object")
 		},
 	})
 	if err != nil {
@@ -137,41 +137,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-type EnqueueRequestForOrphans struct {
-	handler.EnqueueRequestForOwner
-	Adopt func(e *EnqueueRequestForOrphans, object metav1.Object) ([]metav1.OwnerReference, error)
-}
-
-func (e *EnqueueRequestForOrphans) getOwnersReferences(object metav1.Object) []metav1.OwnerReference {
-	if object == nil {
-		return nil
-	}
-
-	var refs []metav1.OwnerReference
-
-	// If not filtered as Controller only, then use all the OwnerReferences
-	if !e.IsController {
-		refs = object.GetOwnerReferences()
-	}
-	// If filtered to a Controller, only take the Controller OwnerReference
-	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
-		refs = []metav1.OwnerReference{*ownerRef}
-	}
-
-	if len(refs) == 0 {
-		ownerRefs, err := e.Adopt(e, object)
-		if err == nil {
-			refs = ownerRefs
-		}
-	}
-
-	return refs
-}
-
 var _ reconcile.Reconciler = &ReconcileFooReplicaSet{}
 
 // ReconcileFooReplicaSet reconciles a FooReplicaSet object
 type ReconcileFooReplicaSet struct {
+	reconcile.Reconciler
 	client.Client
 	scheme *runtime.Scheme
 }
@@ -187,7 +157,6 @@ type ReconcileFooReplicaSet struct {
 // +kubebuilder:rbac:groups=foo.raker22.com,resources=fooreplicasets/status,verbs=get;update;patch
 func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// Fetch the FooReplicaSet instance
-	log.Info("reconciling foo replica set", "namespace", request.NamespacedName.Namespace, "name", request.NamespacedName.Name)
 	instance := &foov1.FooReplicaSet{}
 	if err := r.Get(context.TODO(), request.NamespacedName, instance); err != nil {
 		// check if we got a foo instead of a foo replica set
@@ -259,45 +228,31 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 	//	return reconcile.Result{}, err
 	//}
 
-	var updateFoos []foov1.Foo
+	var ownFoos []foov1.Foo
 	for _, foo := range fooList.Items {
-		ownerRef := metav1.GetControllerOf(&foo)
-		//hasOwner := false
-		//isOwner := false
-		//
-		//for _, ref := range ownerRefs {
-		//	if ref.Kind == gvk.Kind {
-		//		hasOwner = true
-		//
-		//		if ref.UID == instance.UID {
-		//			isOwner = true
-		//			break
-		//		}
-		//	}
-		//}
-		//
-		//if !hasOwner {
-		//	log.Info("Adopting foo",
-		//		"namespace", instance.Namespace,
-		//		"fooReplicaSet", instance.Name,
-		//		"foo", foo.Name,
-		//	)
-		//	if err := controllerutil.SetControllerReference(instance, &foo, r.scheme); err != nil {
-		//		log.Info("Failed to adopt foo",
-		//			"namespace", instance.Namespace,
-		//			"fooReplicaSet", instance.Name,
-		//			"foo", foo.Name,
-		//		)
-		//		return reconcile.Result{}, err
-		//	}
-		//	isOwner = true
-		//}
-
-		if ownerRef.UID == instance.UID {
-			updateFoos = append(updateFoos, foo)
+		// get own foos and adopt foos that don't have an owners
+		if ownerRef := metav1.GetControllerOf(&foo); ownerRef != nil {
+			if ownerRef.UID == instance.UID {
+				ownFoos = append(ownFoos, foo)
+			}
+		} else {
+			log.Info("Adopting foo",
+				"namespace", instance.Namespace,
+				"fooReplicaSet", instance.Name,
+				"labels", foo.Name,
+			)
+			if err := controllerutil.SetControllerReference(instance, &foo, r.scheme); err == nil {
+				ownFoos = append(ownFoos, foo)
+			} else {
+				log.Info("Failed to adopt foo",
+					"namespace", instance.Namespace,
+					"fooReplicaSet", instance.Name,
+					"labels", foo.Name,
+				)
+			}
 		}
 	}
-	diffFoos := instance.Spec.Replicas - len(updateFoos)
+	diffFoos := instance.Spec.Replicas - len(ownFoos)
 
 	if diffFoos > 0 {
 		for i := 0; i < diffFoos; i++ {
@@ -321,7 +276,7 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 	} else if diffFoos < 0 {
 		i := -diffFoos
 		removeFoos := fooList.Items[:i]
-		updateFoos = fooList.Items[i:]
+		ownFoos = fooList.Items[i:]
 
 		for _, foo := range removeFoos {
 			log.Info("Deleting foo",
@@ -335,7 +290,7 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 		}
 	}
 
-	for _, foo := range updateFoos {
+	for _, foo := range ownFoos {
 		// TODO(user): Change this for the object type created by your controller
 		// Update the found object and write the result back if there are any changes
 		if !reflect.DeepEqual(fooTemplate.Spec, foo.Spec) {

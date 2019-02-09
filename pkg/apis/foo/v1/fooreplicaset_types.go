@@ -26,6 +26,7 @@ import (
 type FooReplicaSetSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	// +kubebuilder:validation:Minimum=1
 	Replicas int                  `json:"replicas"`
 	Template Foo                  `json:"template"`
 	Selector metav1.LabelSelector `json:"selector"`
