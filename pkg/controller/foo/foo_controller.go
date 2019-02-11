@@ -115,10 +115,6 @@ func (r *ReconcileFoo) Reconcile(request reconcile.Request) (reconcile.Result, e
 		Value:   instance.Spec.Value,
 	}
 
-	//if err := controllerutil.SetControllerReference(instance, foo, r.scheme); err != nil {
-	//	return reconcile.Result{}, err
-	//}
-
 	// TODO(user): Change this for the object type created by your controller
 	// Check if the Deployment already exists
 	found := &foov1.Foo{}
