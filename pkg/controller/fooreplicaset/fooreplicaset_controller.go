@@ -108,22 +108,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 				if selector.Matches(fooLabels) {
 					return &fooReplicaSet, nil
-					//log.Info("Adopting foo",
-					//	"namespace", foo.Namespace,
-					//	"fooReplicaSet", fooReplicaSet.Name,
-					//	"foo", foo.Name,
-					//)
-					//if err := controllerutil.SetControllerReference(&fooReplicaSet, foo, mgr.GetScheme()); err != nil {
-					//	log.Info("Failed to adopt foo",
-					//		"namespace", foo.Namespace,
-					//		"fooReplicaSet", fooReplicaSet.Name,
-					//		"foo", foo.Name,
-					//	)
-					//} else {
-					//	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
-					//		return []metav1.OwnerReference{*ownerRef}, nil
-					//	}
-					//}
 				}
 			}
 
