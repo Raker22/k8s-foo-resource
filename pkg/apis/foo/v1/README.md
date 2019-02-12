@@ -1,26 +1,26 @@
 # Types
 
-Add fields to `Spec`/`Status`.
+Add properties to `Spec`/`Status`.
 Resource and List types are automatically generated with the following template.
 
 ```go
 // where `Kind` is the resource kind from `kubebuilder create api`
-type ${Kind} struct {
+type Kind struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ${Kind}Spec   `json:"spec,omitempty"`
-	Status ${Kind}Status `json:"status,omitempty"`
+	Spec   KindSpec   `json:"spec,omitempty"`
+	Status KindStatus `json:"status,omitempty"`
 }
 
-type ${Kind}List struct {
+type KindList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []${Kind} `json:"items"`
+	Items           []Kind `json:"items"`
 }
 ```
 
-`make install` builds the CRDs in `config/crds` and applies them to the cluster.
+`make install` generates the [CRDs](../../../../config/crds) in `config/crds` and applies them to the cluster.
 It should be run any time a type is updated to ensure the CRDs are up to date.
 
 ```go
@@ -38,7 +38,7 @@ type FooStatus struct {
 }
 ```
 
-Add validation to the `Replicas` field.
+An example of validation on the `Replicas` property.
 
 ```go
 // foorepicaset_types.go

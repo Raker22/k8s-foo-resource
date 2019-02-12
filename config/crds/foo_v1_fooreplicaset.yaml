@@ -8,6 +8,9 @@ metadata:
 spec:
   group: foo.raker22.com
   names:
+    categories:
+    - all
+    - allfoo
     kind: FooReplicaSet
     plural: fooreplicasets
   scope: Namespaced

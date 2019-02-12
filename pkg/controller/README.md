@@ -47,7 +47,7 @@ Meaning that
 * `kind-controller` responds to all `Kind` resource changes by reconciling the resource
 * `kind-controller` responds to `OtherKind` resource changes by reconciling it's owner if the owner is a `Kind` resource
 
-These two handlers work for most simple cases but [custom handlers](../handler/README.md) can be implemented.
+These two handlers work for most simple cases but [custom handlers](../handler) can be implemented.
 
 ## Reconciler
 A `Reconciler` takes a resource that has changed and updates the system to match the desired state.

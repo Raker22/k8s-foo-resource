@@ -43,6 +43,7 @@ type FooReplicaSetStatus struct {
 
 // FooReplicaSet is the Schema for the fooreplicasets API
 // +k8s:openapi-gen=true
+// +kubebuilder:categories=all,allfoo
 type FooReplicaSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
