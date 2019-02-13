@@ -44,6 +44,9 @@ type FooStatus struct {
 // Foo is the Schema for the foos API
 // +k8s:openapi-gen=true
 // +kubebuilder:categories=all,allfoo
+// +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.message"
+// +kubebuilder:printcolumn:name="Value",type="string",JSONPath=".status.value"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Foo struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -36,6 +36,7 @@ type FooReplicaSetSpec struct {
 type FooReplicaSetStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	CurrentReplicas int `json:"currentReplicas"`
 }
 
 // +genclient
@@ -44,6 +45,8 @@ type FooReplicaSetStatus struct {
 // FooReplicaSet is the Schema for the fooreplicasets API
 // +k8s:openapi-gen=true
 // +kubebuilder:categories=all,allfoo
+// +kubebuilder:printcolumn:name="Current Replicas",type="integer",JSONPath=".status.currentReplicas"
+// +kubebuilder:printcolumn:name="Desired Replicas",type="integer",JSONPath=".spec.replicas"
 type FooReplicaSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

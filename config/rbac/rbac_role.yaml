@@ -5,6 +5,46 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - apps
+  resources:
+  - deployments/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - foo.raker22.com
+  resources:
+  - defaultfoos
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - foo.raker22.com
+  resources:
+  - defaultfoos/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
   - foo.raker22.com
   resources:
   - foos

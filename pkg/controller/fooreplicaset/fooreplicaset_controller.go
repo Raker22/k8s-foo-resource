@@ -284,10 +284,24 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 				"fooReplicaSet", instance.Name,
 				"foo", foo.Name,
 			)
-			err = r.Update(context.TODO(), &foo)
-			if err != nil {
+			if err = r.Update(context.TODO(), &foo); err != nil {
 				return reconcile.Result{}, err
 			}
+		}
+	}
+
+	status := instance.Status.DeepCopy()
+
+	status.CurrentReplicas = instance.Spec.Replicas
+
+	if !reflect.DeepEqual(status, instance.Status) {
+		instance.Status = *status
+		log.Info("Updating foo replica set",
+			"namespace", instance.Namespace,
+			"fooReplicaSet", instance.Name,
+		)
+		if err = r.Update(context.TODO(), instance); err != nil {
+			return reconcile.Result{}, err
 		}
 	}
 

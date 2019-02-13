@@ -6,6 +6,16 @@ metadata:
     controller-tools.k8s.io: "1.0"
   name: foos.foo.raker22.com
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .status.message
+    name: Message
+    type: string
+  - JSONPath: .status.value
+    name: Value
+    type: string
+  - JSONPath: .metadata.creationTimestamp
+    name: Age
+    type: date
   group: foo.raker22.com
   names:
     categories:

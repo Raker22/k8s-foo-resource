@@ -1,0 +1,9 @@
+apiVersion: foo.raker22.com/v1
+kind: DefaultFoo
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: defaultfoo-sample
+spec:
+  # Add fields here
+  foo: bar
