@@ -143,23 +143,15 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 	// Fetch the FooReplicaSet instance
 	instance := &foov1.FooReplicaSet{}
 	if err := r.Get(context.TODO(), request.NamespacedName, instance); err != nil {
-		// check if we got a foo instead of a foo replica set
-		fooInstance := &foov1.Foo{}
-		if er := r.Get(context.TODO(), request.NamespacedName, fooInstance); er != nil {
-			// Error reading the object
-			if errors.IsNotFound(err) {
-				// Object not found, return.  Created objects are automatically garbage collected.
-				// For additional cleanup logic use finalizers.
-				return reconcile.Result{}, nil
-			}
-
-			// requeue the request.
-			return reconcile.Result{}, err
+		// Error reading the object
+		if errors.IsNotFound(err) {
+			// Object not found, return.  Created objects are automatically garbage collected.
+			// For additional cleanup logic use finalizers.
+			return reconcile.Result{}, nil
 		}
 
-		// it was a foo so get matching replica sets
-		log.Info("it was a foo", "namespace", request.NamespacedName.Namespace, "name", request.NamespacedName.Name)
-		return reconcile.Result{}, nil
+		// requeue the request.
+		return reconcile.Result{}, err
 	}
 
 	if reflect.DeepEqual(instance.Spec.Selector, metav1.LabelSelector{}) {
@@ -184,6 +176,7 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 
 	fooList := &foov1.FooList{}
 	if err := r.List(context.TODO(), &client.ListOptions{
+		Namespace: instance.Namespace,
 		LabelSelector: selector,
 	}, fooList); err != nil {
 		return reconcile.Result{}, err
