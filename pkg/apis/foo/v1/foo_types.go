@@ -44,8 +44,10 @@ type FooStatus struct {
 // Foo is the Schema for the foos API
 // +k8s:openapi-gen=true
 // +kubebuilder:categories=all,allfoo
-// +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".spec.message"
-// +kubebuilder:printcolumn:name="Value",type="string",JSONPath=".spec.value"
+// +kubebuilder:printcolumn:name="Current Message",type="string",JSONPath=".status.message"
+// +kubebuilder:printcolumn:name="Desired Message",type="string",JSONPath=".spec.message"
+// +kubebuilder:printcolumn:name="Current Value",type="integer",JSONPath=".status.value"
+// +kubebuilder:printcolumn:name="Desired Value",type="integer",JSONPath=".spec.value"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type Foo struct {
 	metav1.TypeMeta   `json:",inline"`
