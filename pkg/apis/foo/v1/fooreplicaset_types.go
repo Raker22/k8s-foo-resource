@@ -22,13 +22,18 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type FooTemplate struct {
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              FooSpec `json:"spec"`
+}
+
 // FooReplicaSetSpec defines the desired state of FooReplicaSet
 type FooReplicaSetSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	// +kubebuilder:validation:Minimum=1
 	Replicas int                  `json:"replicas"`
-	Template Foo                  `json:"template"`
+	Template FooTemplate          `json:"template"`
 	Selector metav1.LabelSelector `json:"selector"`
 }
 
@@ -47,6 +52,9 @@ type FooReplicaSetStatus struct {
 // +kubebuilder:categories=all,allfoo
 // +kubebuilder:printcolumn:name="Current Replicas",type="integer",JSONPath=".status.currentReplicas"
 // +kubebuilder:printcolumn:name="Desired Replicas",type="integer",JSONPath=".spec.replicas"
+// +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".spec.template.spec.message"
+// +kubebuilder:printcolumn:name="Value",type="integer",JSONPath=".spec.template.spec.value"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type FooReplicaSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

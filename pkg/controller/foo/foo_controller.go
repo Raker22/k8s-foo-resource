@@ -22,7 +22,6 @@ import (
 	foov1 "github.com/raker22/k8s-foo-resource/pkg/apis/foo/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -64,7 +63,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create
 	// Uncomment watch a Deployment created by Foo - change this for objects you create
 	//err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 	//	IsController: true,
@@ -87,8 +85,6 @@ type ReconcileFoo struct {
 
 // Reconcile reads that state of the cluster for a Foo object and makes changes based on the state read
 // and what is in the Foo.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
-// a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Foos
 // +kubebuilder:rbac:groups=foo.raker22.com,resources=foos,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=foo.raker22.com,resources=foos/status,verbs=get;update;patch
@@ -106,29 +102,16 @@ func (r *ReconcileFoo) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
-	// TODO(user): Change this to be the object type created by your controller
-	// Define the desired Deployment object
-	foo := instance.DeepCopy()
-
-	foo.Status = foov1.FooStatus{
+	status := foov1.FooStatus{
 		Message: instance.Spec.Message,
 		Value:   instance.Spec.Value,
 	}
 
-	// TODO(user): Change this for the object type created by your controller
-	// Check if the Deployment already exists
-	found := &foov1.Foo{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: foo.Name, Namespace: foo.Namespace}, found)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// TODO(user): Change this for the object type created by your controller
-	// Update the found object and write the result back if there are any changes
-	if !reflect.DeepEqual(foo.Status, found.Status) {
-		found.Status = foo.Status
-		log.Info("Updating Foo", "foo", foo.Name)
-		err = r.Update(context.TODO(), found)
+	// Update the object and write the result back if there are any changes
+	if !reflect.DeepEqual(status, instance.Status) {
+		instance.Status = status
+		log.Info("Updating Foo", "foo", instance.Name)
+		err = r.Update(context.TODO(), instance)
 		if err != nil {
 			return reconcile.Result{}, err
 		}

@@ -70,8 +70,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create
-	// Uncomment watch a Deployment created by FooReplicaSet - change this for objects you create
+	// watch for changes to Foo that are owned by or could be owned by a FooReplicaSet
 	err = c.Watch(&source.Kind{Type: &foov1.Foo{}}, &foohandler.EnqueueRequestForController{
 		OwnerType: &foov1.FooReplicaSet{},
 		GetOwner: func(object metav1.Object) (metav1.Object, error) {
@@ -132,8 +131,6 @@ type ReconcileFooReplicaSet struct {
 
 // Reconcile reads that state of the cluster for a FooReplicaSet object and makes changes based on the state read
 // and what is in the FooReplicaSet.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  The scaffolding writes
-// a Deployment as an example
 // Automatically generate RBAC rules to allow the Controller to read and write Deployments
 // +kubebuilder:rbac:groups=foo.raker22.com,resources=foos,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=foo.raker22.com,resources=foos/status,verbs=get;update;patch
@@ -155,7 +152,7 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 	}
 
 	if reflect.DeepEqual(instance.Spec.Selector, metav1.LabelSelector{}) {
-		log.Info("Foo replica set is selecting all foos", "fooReplicaSet", instance.Name)
+		log.Info("Foo replica set is selecting all foos, skipping", "fooReplicaSet", instance.Name)
 		return reconcile.Result{}, nil
 	}
 
@@ -175,57 +172,60 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 	}
 
 	fooList := &foov1.FooList{}
-	if err := r.List(context.TODO(), &client.ListOptions{
-		Namespace: instance.Namespace,
-		LabelSelector: selector,
-	}, fooList); err != nil {
+	if err := r.List(context.TODO(), &client.ListOptions{}, fooList); err != nil {
 		return reconcile.Result{}, err
 	}
 
-	//if instance.DeletionTimestamp != nil {
-	//	log.Info("Foo replica set deleted", "namespace", instance.Namespace, "fooReplicaSet", instance.Name)
-	//	for _, foo := range fooList.Items {
-	//		log.Info("Deleting foo", "namespace", foo.Namespace, "foo", foo.Name)
-	//		if err := r.Delete(context.TODO(), &foo); err != nil {
-	//			return reconcile.Result{}, err
-	//		}
-	//	}
-	//	return reconcile.Result{}, nil
-	//}
-
-	// TODO(user): Change this to be the object type created by your controller
 	// Define the desired Foo object
-	fooTemplate := instance.Spec.Template.DeepCopy()
-	fooTemplate.Status = foov1.FooStatus{}
+	fooTemplate := instance.Spec.Template
 	fooTemplate.Namespace = instance.Namespace
 	fooTemplate.GenerateName = fmt.Sprintf("%s-", instance.Name)
 
-	//gvk, err := apiutil.GVKForObject(instance, r.scheme)
-	//if err != nil {
-	//	return reconcile.Result{}, err
-	//}
-
 	var ownFoos []foov1.Foo
 	for _, foo := range fooList.Items {
-		// get own foos and adopt foos that don't have an owners
-		if ownerRef := metav1.GetControllerOf(&foo); ownerRef != nil {
-			if ownerRef.UID == instance.UID {
-				ownFoos = append(ownFoos, foo)
-			}
-		} else {
-			log.Info("Adopting foo",
-				"namespace", instance.Namespace,
-				"fooReplicaSet", instance.Name,
-				"labels", foo.Name,
-			)
-			if err := controllerutil.SetControllerReference(instance, &foo, r.scheme); err == nil {
-				ownFoos = append(ownFoos, foo)
+		if selector.Matches(labels.Set(foo.Labels)) {
+			// get own foos and adopt foos that don't have an owners
+			if ownerRef := metav1.GetControllerOf(&foo); ownerRef != nil {
+				if ownerRef.UID == instance.UID {
+					ownFoos = append(ownFoos, foo)
+				}
 			} else {
-				log.Info("Failed to adopt foo",
+				log.Info("Adopting foo",
 					"namespace", instance.Namespace,
 					"fooReplicaSet", instance.Name,
-					"labels", foo.Name,
+					"foo", foo.Name,
 				)
+				if err := controllerutil.SetControllerReference(instance, &foo, r.scheme); err == nil {
+					ownFoos = append(ownFoos, foo)
+				} else {
+					log.Info("Failed to adopt foo",
+						"namespace", instance.Namespace,
+						"fooReplicaSet", instance.Name,
+						"foo", foo.Name,
+					)
+				}
+			}
+		} else if ref := metav1.GetControllerOf(&foo); ref != nil && instance.UID == ref.UID {
+			log.Info("Orphaning foo",
+				"namespace", instance.Namespace,
+				"fooReplicaSet", instance.Name,
+				"foo", foo.Name,
+			)
+			var refs []metav1.OwnerReference
+			for _, ref := range foo.OwnerReferences {
+				if ref.UID != instance.UID {
+					refs = append(refs, ref)
+				}
+			}
+
+			foo.OwnerReferences = refs
+			if err = r.Update(context.TODO(), &foo); err != nil {
+				log.Info("Failed to orphan foo",
+					"namespace", instance.Namespace,
+					"fooReplicaSet", instance.Name,
+					"foo", foo.Name,
+				)
+				return reconcile.Result{}, err
 			}
 		}
 	}
@@ -233,7 +233,10 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 
 	if diffFoos > 0 {
 		for i := 0; i < diffFoos; i++ {
-			foo := fooTemplate.DeepCopy()
+			foo := &foov1.Foo{
+				ObjectMeta: fooTemplate.ObjectMeta,
+				Spec:       fooTemplate.Spec,
+			}
 
 			if err := controllerutil.SetControllerReference(instance, foo, r.scheme); err != nil {
 				log.Info("Failed to set owner of foo",
@@ -243,7 +246,6 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 				return reconcile.Result{}, err
 			}
 
-			// TODO(user): Change this for the object type created by your controller
 			log.Info("Creating foo", "namespace", foo.Namespace, "generateName", foo.GenerateName)
 			if err := r.Create(context.TODO(), foo); err != nil {
 				log.Info("Failed to create foo", "namespace", foo.Namespace, "fooReplicaSet", instance.Name)
@@ -268,7 +270,6 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 	}
 
 	for _, foo := range ownFoos {
-		// TODO(user): Change this for the object type created by your controller
 		// Update the found object and write the result back if there are any changes
 		if !reflect.DeepEqual(fooTemplate.Spec, foo.Spec) {
 			foo.Spec = fooTemplate.Spec
@@ -287,7 +288,7 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 
 	status.CurrentReplicas = instance.Spec.Replicas
 
-	if !reflect.DeepEqual(status, instance.Status) {
+	if !reflect.DeepEqual(*status, instance.Status) {
 		instance.Status = *status
 		log.Info("Updating foo replica set",
 			"namespace", instance.Namespace,

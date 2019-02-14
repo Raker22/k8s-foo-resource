@@ -7,10 +7,10 @@ metadata:
   name: foos.foo.raker22.com
 spec:
   additionalPrinterColumns:
-  - JSONPath: .status.message
+  - JSONPath: .spec.message
     name: Message
     type: string
-  - JSONPath: .status.value
+  - JSONPath: .spec.value
     name: Value
     type: string
   - JSONPath: .metadata.creationTimestamp
