@@ -1,5 +1,5 @@
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= raker22/k8s-foo:latest
 
 all: test manager
 
