@@ -254,8 +254,8 @@ func (r *ReconcileFooReplicaSet) Reconcile(request reconcile.Request) (reconcile
 		}
 	} else if diffFoos < 0 {
 		i := -diffFoos
-		removeFoos := fooList.Items[:i]
-		ownFoos = fooList.Items[i:]
+		removeFoos := ownFoos[:i]
+		ownFoos = ownFoos[i:]
 
 		for _, foo := range removeFoos {
 			log.Info("Deleting foo",
